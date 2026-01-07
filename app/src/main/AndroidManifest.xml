@@ -12,7 +12,7 @@
 
         <meta-data
             android:name="tachiyomi.extension.class"
-            android:value=".Mangariss" />
+            android:value="eu.kanade.tachiyomi.extension.fr.mangariss.Mangariss" />
         <meta-data
             android:name="tachiyomi.extension.nsfw"
             android:value="false" />

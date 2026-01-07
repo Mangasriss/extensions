@@ -9,14 +9,13 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "eu.kanade.tachiyomi.extension"
-        applicationIdSuffix = "fr.mangariss"
+        applicationId = "eu.kanade.tachiyomi.extension.fr.mangariss"
         minSdk = 21
         targetSdk = 34
         versionCode = 20
         versionName = "${libs.versions.extlib.get().substringBeforeLast('.')}.$versionCode"
         base {
-            archivesName = "tachiyomi-$applicationIdSuffix-v$versionName"
+            archivesName = "tachiyomi-fr.mangariss-v$versionName"
         }
     }
 
