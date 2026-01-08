@@ -89,8 +89,8 @@ jobs:
 
       - name: Create repo artifact
         env:
-          REPO_NAME: "Mangariss Extension Repo"
-          REPO_SHORT_NAME: "Mangariss Repo"
+          REPO_NAME: "Mangariss Extension"
+          REPO_SHORT_NAME: "Mangariss"
           REPO_WEBSITE: "https://github.com/Mangasriss/extensions"
           SIGNING_KEY_FINGERPRINT: ${{ secrets.SIGNING_KEY_FINGERPRINT }}
         run: |
