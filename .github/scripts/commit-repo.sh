@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-rsync -a --delete --force --exclude .git --exclude .gitignore --exclude README.md --exclude repo.json ../main/repo/ .
+rsync -a --delete --force --exclude .git --exclude .gitignore --exclude README.md ../main/repo/ .
 git config --global user.email "github-actions[bot]@users.noreply.github.com"
 git config --global user.name "github-actions[bot]"
 git status

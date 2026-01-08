@@ -123,3 +123,15 @@ with (REPO_DIR / "index.min.json").open("w", encoding="utf-8") as f:
 
 with (REPO_DIR / "index.min.json").open("r", encoding="utf-8") as f:
     print(f"index.min.json content as read:\n{f.read()}")
+
+repo_details = {
+    "name": os.environ.get("REPO_NAME", "Mangariss"),
+    "description": os.environ.get("REPO_DESCRIPTION", "Mangariss extension repo"),
+    "website": os.environ.get("REPO_WEBSITE", "https://github.com/Mangasriss/extensions"),
+}
+signing_fingerprint = os.environ.get("SIGNING_KEY_FINGERPRINT")
+if signing_fingerprint:
+    repo_details["signingKeyFingerprint"] = signing_fingerprint
+
+with (REPO_DIR / "repo.json").open("w", encoding="utf-8") as f:
+    json.dump(repo_details, f, ensure_ascii=False, indent=2)
