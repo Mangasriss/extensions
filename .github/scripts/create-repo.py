@@ -115,8 +115,8 @@ with (REPO_DIR / "index.min.json").open("r", encoding="utf-8") as f:
 
 repo_details = {
     "meta": {
-        "name": os.environ.get("REPO_NAME", "Mangariss Extension Repo"),
-        "shortName": os.environ.get("REPO_SHORT_NAME", "Mangariss Repo"),
+        "name": os.environ.get("REPO_NAME", "Mangariss Extension"),
+        "shortName": os.environ.get("REPO_SHORT_NAME", "Mangariss"),
         "website": os.environ.get(
             "REPO_WEBSITE",
             "https://github.com/Mangasriss/extensions",
