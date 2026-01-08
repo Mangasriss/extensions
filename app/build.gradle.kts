@@ -63,4 +63,5 @@ dependencies {
     compileOnly(libs.tachiyomi.lib)
     compileOnly(libs.okhttp)
     compileOnly(libs.kotlinx.serialization.json)
+    compileOnly(libs.rxjava)
 }
