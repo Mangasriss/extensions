@@ -1,5 +1,7 @@
 {
-  "name": "Mangariss",
-  "description": "Mangariss extension repo",
-  "website": "https://github.com/Mangasriss/extensions"
+  "meta": {
+    "name": "Mangariss Extension Repo",
+    "shortName": "Mangariss Repo",
+    "website": "https://github.com/Mangasriss/extensions"
+  }
 }
