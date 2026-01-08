@@ -8,6 +8,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import okhttp3.Request
@@ -32,7 +33,10 @@ class Mangariss : HttpSource() {
         GET("$apiBaseUrl/mangas.json", headers)
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val list = json.decodeFromString<List<MangaDto>>(response.body.string())
+        val list = json.decodeFromString(
+            ListSerializer(MangaDto.serializer()),
+            response.body.string(),
+        )
 
         val mangas = list.map {
             SManga.create().apply {
@@ -52,7 +56,10 @@ class Mangariss : HttpSource() {
         GET("$baseUrl${manga.url}", headers)
 
     override fun mangaDetailsParse(response: Response): SManga {
-        val d = json.decodeFromString<MangaDetailsDto>(response.body.string())
+        val d = json.decodeFromString(
+            MangaDetailsDto.serializer(),
+            response.body.string(),
+        )
         return SManga.create().apply {
             title = d.title
             author = d.author
@@ -66,7 +73,10 @@ class Mangariss : HttpSource() {
     // CHAPITRES
     // =======================
     override fun chapterListParse(response: Response): List<SChapter> {
-        val d = json.decodeFromString<MangaDetailsDto>(response.body.string())
+        val d = json.decodeFromString(
+            MangaDetailsDto.serializer(),
+            response.body.string(),
+        )
         return d.chapters.map {
             SChapter.create().apply {
                 name = it.title
