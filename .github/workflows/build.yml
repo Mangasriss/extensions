@@ -88,6 +88,11 @@ jobs:
           path: main
 
       - name: Create repo artifact
+        env:
+          REPO_NAME: "Mangariss Extension Repo"
+          REPO_SHORT_NAME: "Mangariss Repo"
+          REPO_WEBSITE: "https://github.com/Mangasriss/extensions"
+          SIGNING_KEY_FINGERPRINT: ${{ secrets.SIGNING_KEY_FINGERPRINT }}
         run: |
           cd main
           python ./.github/scripts/move-apk.py
