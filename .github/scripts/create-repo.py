@@ -28,17 +28,6 @@ with open("output.json", encoding="utf-8") as f:
 index_data = []
 index_min_data = []
 
-def normalize_source_ids(sources):
-    normalized = []
-    for source in sources:
-        source_copy = dict(source)
-        source_id = source_copy.get("id")
-        if isinstance(source_id, str) and source_id.isdigit():
-            source_copy["id"] = int(source_id)
-        normalized.append(source_copy)
-    return normalized
-
-
 for apk in REPO_APK_DIR.iterdir():
     badging = subprocess.check_output(
         [
@@ -61,7 +50,7 @@ for apk in REPO_APK_DIR.iterdir():
         f.write(i.read())
 
     language = LANGUAGE_REGEX.search(apk.name).group(1)
-    sources = normalize_source_ids(inspector_data[package_name])
+    sources = inspector_data[package_name]
 
     if len(sources) == 1:
         source_language = sources[0]["lang"]
@@ -93,7 +82,7 @@ for apk in REPO_APK_DIR.iterdir():
             {
                 "name": source["name"],
                 "lang": source["lang"],
-                "id": source["id"],
+                "id": str(source["id"]),
                 "baseUrl": source["baseUrl"],
             }
         )
@@ -125,13 +114,18 @@ with (REPO_DIR / "index.min.json").open("r", encoding="utf-8") as f:
     print(f"index.min.json content as read:\n{f.read()}")
 
 repo_details = {
-    "name": os.environ.get("REPO_NAME", "Mangariss"),
-    "description": os.environ.get("REPO_DESCRIPTION", "Mangariss extension repo"),
-    "website": os.environ.get("REPO_WEBSITE", "https://github.com/Mangasriss/extensions"),
+    "meta": {
+        "name": os.environ.get("REPO_NAME", "Mangariss Extension Repo"),
+        "shortName": os.environ.get("REPO_SHORT_NAME", "Mangariss Repo"),
+        "website": os.environ.get(
+            "REPO_WEBSITE",
+            "https://github.com/Mangasriss/extensions",
+        ),
+    }
 }
 signing_fingerprint = os.environ.get("SIGNING_KEY_FINGERPRINT")
 if signing_fingerprint:
-    repo_details["signingKeyFingerprint"] = signing_fingerprint
+    repo_details["meta"]["signingKeyFingerprint"] = signing_fingerprint
 
 with (REPO_DIR / "repo.json").open("w", encoding="utf-8") as f:
     json.dump(repo_details, f, ensure_ascii=False, indent=2)
