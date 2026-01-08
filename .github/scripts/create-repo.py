@@ -28,6 +28,17 @@ with open("output.json", encoding="utf-8") as f:
 index_data = []
 index_min_data = []
 
+def normalize_source_ids(sources):
+    normalized = []
+    for source in sources:
+        source_copy = dict(source)
+        source_id = source_copy.get("id")
+        if isinstance(source_id, str) and source_id.isdigit():
+            source_copy["id"] = int(source_id)
+        normalized.append(source_copy)
+    return normalized
+
+
 for apk in REPO_APK_DIR.iterdir():
     badging = subprocess.check_output(
         [
@@ -50,7 +61,7 @@ for apk in REPO_APK_DIR.iterdir():
         f.write(i.read())
 
     language = LANGUAGE_REGEX.search(apk.name).group(1)
-    sources = inspector_data[package_name]
+    sources = normalize_source_ids(inspector_data[package_name])
 
     if len(sources) == 1:
         source_language = sources[0]["lang"]
