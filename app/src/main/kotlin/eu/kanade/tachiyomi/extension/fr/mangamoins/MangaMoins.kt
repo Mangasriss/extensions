@@ -8,10 +8,15 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -22,54 +27,71 @@ class MangaMoins : HttpSource() {
     override val lang = "fr"
     override val supportsLatest = true
 
+    private val json = Json { ignoreUnknownKeys = true }
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE)
-
-    override fun popularMangaRequest(page: Int): Request = GET(baseUrl, headers)
-
-    override fun popularMangaParse(response: Response): MangasPage {
-        val document = response.asJsoup()
-        val mangas = document.select("#mangaCarousel .manga-card").mapNotNull { card: Element ->
-            val url = card.attr("href").trim()
-            val title = card.selectFirst(".manga-info h3")?.text()?.trim().orEmpty()
-            val thumbnail = card.selectFirst(".manga-cover img")?.absUrl("src").orEmpty().ifBlank { null }
-
-            if (url.isBlank() || title.isBlank()) return@mapNotNull null
-
-            SManga.create().apply {
-                this.url = url
-                this.title = title
-                this.thumbnail_url = thumbnail
-            }
-        }
-
-        return MangasPage(mangas, false)
+    private val apiHeaders: Headers by lazy {
+        headersBuilder()
+            .set("Referer", "$baseUrl/")
+            .set("Origin", baseUrl)
+            .set("X-Requested-With", "XMLHttpRequest")
+            .set("Accept", "application/json, text/plain, */*")
+            .build()
     }
 
-    override fun latestUpdatesRequest(page: Int): Request = popularMangaRequest(page)
+    override fun popularMangaRequest(page: Int): Request =
+        GET("$baseUrl/api/v1/mangas?page=$page&limit=30", apiHeaders)
 
-    override fun latestUpdatesParse(response: Response): MangasPage = popularMangaParse(response)
+    override fun popularMangaParse(response: Response): MangasPage {
+        val payload = json.decodeFromString<MangasResponse>(response.body.string())
+        val mangas = payload.data.map { manga ->
+            SManga.create().apply {
+                title = manga.title
+                url = "/manga/${toSlug(manga.title)}"
+                thumbnail_url = "$baseUrl/files/scans/${manga.cover_folder}/thumbnail.webp"
+            }
+        }
+        val hasNextPage = payload.page * payload.limit < payload.total
+        return MangasPage(mangas, hasNextPage)
+    }
+
+    override fun latestUpdatesRequest(page: Int): Request {
+        val offset = (page - 1) * 30
+        return GET("$baseUrl/api/v1/latest-chapters?offset=$offset", apiHeaders)
+    }
+
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        val payload = json.decodeFromString<LatestChaptersResponse>(response.body.string())
+        val mangas = payload.items
+            .distinctBy { it.title.lowercase(Locale.ROOT) }
+            .map { item ->
+                SManga.create().apply {
+                    title = item.title
+                    url = "/manga/${toSlug(item.title)}"
+                    thumbnail_url = "$baseUrl/files/scans/${item.folder}/thumbnail.webp"
+                    author = item.author
+                }
+            }
+        return MangasPage(mangas, payload.hasMore)
+    }
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val q = query.trim()
-        if (q.isBlank()) return GET(baseUrl, headers)
-        val slug = q.replace(" ", "+")
-        return GET("$baseUrl/manga/$slug", headers)
+        if (q.isBlank()) return popularMangaRequest(1)
+        val encoded = URLEncoder.encode(q, "UTF-8")
+        return GET("$baseUrl/api/v1/mangas?page=$page&limit=30&q=$encoded", apiHeaders)
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val path = response.request.url.encodedPath
-        if (path == "/" || path.isBlank()) return popularMangaParse(response)
-
-        val document = response.asJsoup()
-        val title = document.selectFirst("#manga-title, .title-display")?.text()?.trim().orEmpty()
-        if (title.isBlank()) return MangasPage(emptyList(), false)
-
-        val manga = SManga.create().apply {
-            this.title = title
-            this.url = path
-            this.thumbnail_url = document.selectFirst("#manga-cover")?.absUrl("src").orEmpty().ifBlank { null }
+        val payload = json.decodeFromString<MangasResponse>(response.body.string())
+        val mangas = payload.data.map { manga ->
+            SManga.create().apply {
+                title = manga.title
+                url = "/manga/${toSlug(manga.title)}"
+                thumbnail_url = "$baseUrl/files/scans/${manga.cover_folder}/thumbnail.webp"
+            }
         }
-        return MangasPage(listOf(manga), false)
+        val hasNextPage = payload.page * payload.limit < payload.total
+        return MangasPage(mangas, hasNextPage)
     }
 
     override fun mangaDetailsParse(response: Response): SManga {
@@ -144,4 +166,35 @@ class MangaMoins : HttpSource() {
             0L
         }
     }
+
+    private fun toSlug(title: String): String =
+        title.lowercase(Locale.ROOT).trim().replace("\\s+".toRegex(), "+")
+
+    @Serializable
+    data class MangaApiItem(
+        val title: String,
+        val folder: String,
+        val cover_folder: String,
+    )
+
+    @Serializable
+    data class MangasResponse(
+        val total: Int = 0,
+        val page: Int = 1,
+        val limit: Int = 30,
+        val data: List<MangaApiItem> = emptyList(),
+    )
+
+    @Serializable
+    data class LatestChapterItem(
+        val folder: String,
+        val title: String,
+        val author: String? = null,
+    )
+
+    @Serializable
+    data class LatestChaptersResponse(
+        val items: List<LatestChapterItem> = emptyList(),
+        val hasMore: Boolean = false,
+    )
 }
