@@ -1,20 +1,20 @@
 [
   {
-    "name": "Mangariss",
-    "pkg": "eu.kanade.tachiyomi.extension.fr.mangariss",
-    "apk": "tachiyomi-fr.mangariss-v1.4.21.apk",
+    "name": "Tachiyomi: Manga Moins",
+    "pkg": "eu.kanade.tachiyomi.extension.fr.mangamoins",
+    "apk": "tachiyomi-fr.mangamoins-v1.4.1.apk",
     "lang": "fr",
-    "code": 21,
-    "version": "1.4.21",
+    "code": 1,
+    "version": "1.4.1",
     "nsfw": 0,
     "hasReadme": 0,
     "hasChangelog": 0,
     "sources": [
       {
-        "name": "Mangariss",
+        "name": "Manga Moins",
         "lang": "fr",
-        "id": "8891634766264956418",
-        "baseUrl": "https://mangasriss.github.io/mangariss-bot",
+        "id": "8023003836221612938",
+        "baseUrl": "https://mangamoins.com",
         "versionId": 1
       }
     ]
