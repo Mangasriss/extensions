@@ -14,7 +14,7 @@ on:
       - '!**.md'
       - '!.github/**'
       - '.github/scripts/**'
-      - '.github/workflows/build_push.yml'
+      - '.github/workflows/build.yml'
 
 jobs:
   prepare_and_build:
@@ -93,11 +93,30 @@ jobs:
           REPO_SHORT_NAME: "Manga Moins"
           REPO_WEBSITE: "https://github.com/Mangasriss/extensions"
           SIGNING_KEY_FINGERPRINT: ${{ secrets.SIGNING_KEY_FINGERPRINT }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           cd main
           python ./.github/scripts/move-apk.py
-          INSPECTOR_LINK="$(curl -s "https://api.github.com/repos/keiyoushi/extensions-inspector/releases/latest" | jq -r '.assets[0].browser_download_url')"
-          curl -L "$INSPECTOR_LINK" -o ./Inspector.jar
+          INSPECTOR_LINK="$(curl -fsSL \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/keiyoushi/extensions-inspector/releases/latest" \
+            | jq -r '.assets[]? | select(.name | test("(?i)inspector.*\\.jar$")) | .browser_download_url' \
+            | head -n1)"
+
+          for URL in \
+            "$INSPECTOR_LINK" \
+            "https://github.com/keiyoushi/extensions-inspector/releases/latest/download/Inspector.jar" \
+            "https://github.com/keiyoushi/extensions-inspector/releases/latest/download/extensions-inspector.jar"
+          do
+            [ -z "$URL" ] && continue
+            echo "Trying Inspector URL: $URL"
+            if curl -fL "$URL" -o ./Inspector.jar; then
+              break
+            fi
+          done
+
+          test -s ./Inspector.jar
           java -jar ./Inspector.jar "repo/apk" "output.json" "tmp"
           python ./.github/scripts/create-repo.py
 
