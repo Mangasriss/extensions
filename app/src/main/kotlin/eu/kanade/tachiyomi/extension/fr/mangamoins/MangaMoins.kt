@@ -9,7 +9,6 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import okhttp3.Headers
 import okhttp3.Request
@@ -42,7 +41,7 @@ class MangaMoins : HttpSource() {
         GET("$baseUrl/api/v1/mangas?page=$page&limit=30", apiHeaders)
 
     override fun popularMangaParse(response: Response): MangasPage {
-        val payload = json.decodeFromString<MangasResponse>(response.body.string())
+        val payload = json.decodeFromString(MangasResponse.serializer(), response.body.string())
         val mangas = payload.data.map { manga ->
             SManga.create().apply {
                 title = manga.title
@@ -60,7 +59,7 @@ class MangaMoins : HttpSource() {
     }
 
     override fun latestUpdatesParse(response: Response): MangasPage {
-        val payload = json.decodeFromString<LatestChaptersResponse>(response.body.string())
+        val payload = json.decodeFromString(LatestChaptersResponse.serializer(), response.body.string())
         val mangas = payload.items
             .distinctBy { it.title.lowercase(Locale.ROOT) }
             .map { item ->
@@ -82,7 +81,7 @@ class MangaMoins : HttpSource() {
     }
 
     override fun searchMangaParse(response: Response): MangasPage {
-        val payload = json.decodeFromString<MangasResponse>(response.body.string())
+        val payload = json.decodeFromString(MangasResponse.serializer(), response.body.string())
         val mangas = payload.data.map { manga ->
             SManga.create().apply {
                 title = manga.title
