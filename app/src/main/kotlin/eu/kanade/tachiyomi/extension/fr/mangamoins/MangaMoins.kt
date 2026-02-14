@@ -15,6 +15,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Element
 import rx.Observable
+import java.net.URLDecoder
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -93,36 +94,43 @@ class MangaMoins : HttpSource() {
         return MangasPage(mangas, hasNextPage)
     }
 
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        val query = mangaApiQueryFromUrl(manga.url)
+        val encoded = URLEncoder.encode(query, "UTF-8")
+        return GET("$baseUrl/api/v1/manga?manga=$encoded", apiHeaders)
+    }
+
     override fun mangaDetailsParse(response: Response): SManga {
-        val document = response.asJsoup()
+        val payload = json.decodeFromString(MangaDetailResponse.serializer(), response.body.string())
+        val info = payload.info
 
         return SManga.create().apply {
-            title = document.selectFirst("#manga-title, .title-display")?.text()?.trim().orEmpty()
-            author = document.selectFirst("#manga-author")?.text()?.trim()
-            description = document.selectFirst("#manga-desc")?.text()?.trim()
-            status = parseStatus(document.selectFirst("#manga-status")?.text().orEmpty())
-            thumbnail_url = document.selectFirst("#manga-cover")?.absUrl("src").orEmpty().ifBlank { null }
+            title = info.title
+            author = info.author
+            description = info.description?.takeIf { it.isNotBlank() } ?: "Aucune description."
+            status = parseStatus(info.status.orEmpty())
+            thumbnail_url = absolutizePath(info.cover)
         }
     }
 
-    override fun chapterListParse(response: Response): List<SChapter> {
-        val document = response.asJsoup()
-        return document.select("#chapters-list .chapter-item").map { chapter: Element ->
-            val numberText = chapter.selectFirst(".ch-num")?.text()?.trim()?.removePrefix("#").orEmpty()
-            val titleText = chapter.selectFirst(".ch-name")?.text()?.trim().orEmpty()
-            val dateText = chapter.selectFirst(".ch-date")?.text()?.trim().orEmpty()
+    override fun chapterListRequest(manga: SManga): Request = mangaDetailsRequest(manga)
 
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val payload = json.decodeFromString(MangaDetailResponse.serializer(), response.body.string())
+        return payload.chapters.map { chapter ->
+            val numberText = chapter.num.trim().removePrefix("#")
+            val titleText = chapter.title.trim()
             SChapter.create().apply {
-                url = chapter.attr("href").trim()
+                url = "/scan/${chapter.folder}"
                 name = buildString {
                     if (numberText.isNotBlank()) append("Chapitre ").append(numberText)
                     if (titleText.isNotBlank()) {
                         if (isNotEmpty()) append(" - ")
-                        append(titleText.toString())
+                        append(titleText)
                     }
                 }.ifBlank { numberText.ifBlank { titleText } }
                 chapter_number = numberText.toFloatOrNull() ?: -1f
-                date_upload = parseDate(dateText)
+                date_upload = normalizeTimestamp(chapter.time)
             }
         }
     }
@@ -169,6 +177,27 @@ class MangaMoins : HttpSource() {
     private fun toSlug(title: String): String =
         title.lowercase(Locale.ROOT).trim().replace("\\s+".toRegex(), "+")
 
+    private fun mangaApiQueryFromUrl(url: String): String {
+        val slugPart = url.substringAfter("/manga/", "")
+        val decoded = URLDecoder.decode(slugPart, "UTF-8")
+        return decoded.replace("+", " ").trim().ifBlank { decoded }
+    }
+
+    private fun absolutizePath(path: String?): String? {
+        if (path.isNullOrBlank()) return null
+        if (path.startsWith("http://") || path.startsWith("https://")) return path
+
+        var clean = path.trim()
+        while (clean.startsWith("../")) clean = clean.removePrefix("../")
+        clean = clean.removePrefix("./").removePrefix("/")
+        return "$baseUrl/$clean"
+    }
+
+    private fun normalizeTimestamp(value: Long?): Long {
+        val time = value ?: return 0L
+        return if (time < 10_000_000_000L) time * 1000 else time
+    }
+
     @Serializable
     data class MangaApiItem(
         val title: String,
@@ -195,5 +224,28 @@ class MangaMoins : HttpSource() {
     data class LatestChaptersResponse(
         val items: List<LatestChapterItem> = emptyList(),
         val hasMore: Boolean = false,
+    )
+
+    @Serializable
+    data class MangaDetailInfo(
+        val title: String,
+        val author: String? = null,
+        val status: String? = null,
+        val cover: String? = null,
+        val description: String? = null,
+    )
+
+    @Serializable
+    data class MangaDetailChapter(
+        val folder: String,
+        val num: String,
+        val title: String,
+        val time: Long? = null,
+    )
+
+    @Serializable
+    data class MangaDetailResponse(
+        val info: MangaDetailInfo,
+        val chapters: List<MangaDetailChapter> = emptyList(),
     )
 }

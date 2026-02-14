@@ -12,7 +12,7 @@ android {
         applicationId = "eu.kanade.tachiyomi.extension.fr.mangamoins"
         minSdk = 21
         targetSdk = 34
-        versionCode = 3
+        versionCode = 4
         versionName = "${libs.versions.extlib.get().substringBeforeLast('.')}.$versionCode"
         base {
             archivesName = "tachiyomi-fr.mangamoins-v$versionName"
