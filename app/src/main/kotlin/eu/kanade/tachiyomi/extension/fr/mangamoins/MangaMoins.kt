@@ -10,6 +10,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
 import okhttp3.Response
+import org.jsoup.nodes.Element
 import rx.Observable
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -27,7 +28,7 @@ class MangaMoins : HttpSource() {
 
     override fun popularMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
-        val mangas = document.select("#mangaCarousel .manga-card").mapNotNull { card ->
+        val mangas = document.select("#mangaCarousel .manga-card").mapNotNull { card: Element ->
             val url = card.attr("href").trim()
             val title = card.selectFirst(".manga-info h3")?.text()?.trim().orEmpty()
             val thumbnail = card.selectFirst(".manga-cover img")?.absUrl("src").orEmpty().ifBlank { null }
@@ -85,7 +86,7 @@ class MangaMoins : HttpSource() {
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
-        return document.select("#chapters-list .chapter-item").map { chapter ->
+        return document.select("#chapters-list .chapter-item").map { chapter: Element ->
             val numberText = chapter.selectFirst(".ch-num")?.text()?.trim()?.removePrefix("#").orEmpty()
             val titleText = chapter.selectFirst(".ch-name")?.text()?.trim().orEmpty()
             val dateText = chapter.selectFirst(".ch-date")?.text()?.trim().orEmpty()
@@ -96,7 +97,7 @@ class MangaMoins : HttpSource() {
                     if (numberText.isNotBlank()) append("Chapitre ").append(numberText)
                     if (titleText.isNotBlank()) {
                         if (isNotEmpty()) append(" - ")
-                        append(titleText)
+                        append(titleText.toString())
                     }
                 }.ifBlank { numberText.ifBlank { titleText } }
                 chapter_number = numberText.toFloatOrNull() ?: -1f
@@ -107,7 +108,7 @@ class MangaMoins : HttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val document = response.asJsoup()
-        val imageUrls = document.select("#vertical img").mapNotNull { image ->
+        val imageUrls = document.select("#vertical img").mapNotNull { image: Element ->
             when {
                 image.hasAttr("src") && image.attr("src").isNotBlank() -> image.absUrl("src")
                 image.hasAttr("data-src") && image.attr("data-src").isNotBlank() -> image.absUrl("data-src")

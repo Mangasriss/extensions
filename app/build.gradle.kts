@@ -64,4 +64,5 @@ dependencies {
     compileOnly(libs.okhttp)
     compileOnly(libs.kotlinx.serialization.json)
     compileOnly(libs.rxjava)
+    compileOnly(libs.jsoup)
 }
