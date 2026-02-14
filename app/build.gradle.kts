@@ -5,17 +5,17 @@ plugins {
 }
 
 android {
-    namespace = "eu.kanade.tachiyomi.extension.fr.mangariss"
+    namespace = "eu.kanade.tachiyomi.extension.fr.mangamoins"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "eu.kanade.tachiyomi.extension.fr.mangariss"
+        applicationId = "eu.kanade.tachiyomi.extension.fr.mangamoins"
         minSdk = 21
         targetSdk = 34
-        versionCode = 21
+        versionCode = 1
         versionName = "${libs.versions.extlib.get().substringBeforeLast('.')}.$versionCode"
         base {
-            archivesName = "tachiyomi-fr.mangariss-v$versionName"
+            archivesName = "tachiyomi-fr.mangamoins-v$versionName"
         }
     }
 

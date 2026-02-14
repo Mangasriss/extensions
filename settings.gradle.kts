@@ -14,6 +14,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Mangariss"
+rootProject.name = "MangaMoins"
 include(":app")
  

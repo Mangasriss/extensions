@@ -18,7 +18,7 @@ on:
 
 jobs:
   prepare_and_build:
-    name: Prepare and build Mangariss
+    name: Prepare and build Manga Moins
     runs-on: ubuntu-latest
     steps:
       - name: Clone repo
@@ -45,7 +45,7 @@ jobs:
       - name: Ensure Gradle wrapper is executable
         run: chmod +x ./gradlew
 
-      - name: Build Mangariss Extension
+      - name: Build Manga Moins Extension
         env:
           ALIAS: ${{ secrets.ALIAS }}
           KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
@@ -56,7 +56,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: "github.repository == 'Mangasriss/extensions'"
         with:
-          name: "mangariss-apk"
+          name: "mangamoins-apk"
           path: "**/*.apk"
           retention-days: 1
 
@@ -89,8 +89,8 @@ jobs:
 
       - name: Create repo artifact
         env:
-          REPO_NAME: "Mangariss Extension"
-          REPO_SHORT_NAME: "Mangariss"
+          REPO_NAME: "Manga Moins Extension"
+          REPO_SHORT_NAME: "Manga Moins"
           REPO_WEBSITE: "https://github.com/Mangasriss/extensions"
           SIGNING_KEY_FINGERPRINT: ${{ secrets.SIGNING_KEY_FINGERPRINT }}
         run: |
