@@ -13,7 +13,6 @@ import kotlinx.serialization.json.Json
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
-import org.jsoup.nodes.Element
 import rx.Observable
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -137,17 +136,44 @@ class MangaMoins : HttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val document = response.asJsoup()
-        val imageUrls = document.select("#vertical img").mapNotNull { image: Element ->
-            when {
-                image.hasAttr("src") && image.attr("src").isNotBlank() -> image.absUrl("src")
-                image.hasAttr("data-src") && image.attr("data-src").isNotBlank() -> image.absUrl("data-src")
-                else -> null
-            }?.ifBlank { null }
+        val preloadUrls = document
+            .select("link[rel=preload][as=image][href]")
+            .mapNotNull { link ->
+                val href = link.attr("href")
+                if (href.isBlank()) null else absolutizePath(href)
+            }
+            .filter { it.contains("/files/scans/") }
+            .distinct()
+
+        if (preloadUrls.isNotEmpty()) {
+            return preloadUrls.mapIndexed { index, imageUrl -> Page(index, imageUrl = imageUrl) }
         }
 
-        return imageUrls.mapIndexed { index, imageUrl ->
-            Page(index, imageUrl = imageUrl)
+        val inlineUrls = document
+            .select("#vertical img, #image img")
+            .mapNotNull { image ->
+                when {
+                    image.hasAttr("src") && image.attr("src").isNotBlank() -> absolutizePath(image.attr("src"))
+                    image.hasAttr("data-src") && image.attr("data-src").isNotBlank() -> absolutizePath(image.attr("data-src"))
+                    else -> null
+                }
+            }
+            .distinct()
+
+        if (inlineUrls.isNotEmpty()) {
+            return inlineUrls.mapIndexed { index, imageUrl -> Page(index, imageUrl = imageUrl) }
         }
+
+        val scriptUrls = Regex(
+            """["'](\./files/scans/[^"' ]+\.(?:png|jpg|jpeg|webp)(?:\?[^"']*)?)["']""",
+            RegexOption.IGNORE_CASE,
+        )
+            .findAll(document.html())
+            .mapNotNull { absolutizePath(it.groupValues[1]) }
+            .distinct()
+            .toList()
+
+        return scriptUrls.mapIndexed { index, imageUrl -> Page(index, imageUrl = imageUrl) }
     }
 
     override fun imageUrlParse(response: Response): String {
